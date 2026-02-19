@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Waterfall Content Machine v4 - Gemini Edition</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg:#07070f;--surface:#0f0f1a;--card:#131320;--border:#1c1c30;--border-light:#252540;
+            --v1:#7c3aed;--v2:#06b6d4;--v3:#f59e0b;--v4:#10b981;--v5:#f43f5e;
+            --text:#e8e8f0;--muted:#5a5a80;--muted2:#3a3a60;
+        }
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;padding:36px 20px 80px;}
+        body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 60% 40% at 15% 10%,rgba(124,58,237,.08) 0%,transparent 60%),radial-gradient(ellipse 50% 40% at 85% 90%,rgba(6,182,212,.06) 0%,transparent 60%);pointer-events:none;z-index:0;}
+        .wrap{max-width:1100px;margin:0 auto;position:relative;z-index:1;}
+        header{text-align:center;margin-bottom:44px;animation:fadeDown .5s ease both;}
+        .badge{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--v2);border:1px solid rgba(6,182,212,.25);padding:5px 16px;border-radius:20px;margin-bottom:18px;}
+        header h1{font-family:'Syne',sans-serif;font-size:clamp(26px,5vw,46px);font-weight:800;background:linear-gradient(130deg,#fff 40%,var(--v2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.1;margin-bottom:10px;}
+        header p{color:var(--muted);font-size:14px;font-style:italic;}
+        
+        .flow-diagram{display:flex;align-items:center;justify-content:center;margin-bottom:44px;animation:fadeUp .5s .1s ease both;flex-wrap:wrap;gap:6px;}
+        .flow-node{display:flex;flex-direction:column;align-items:center;text-align:center;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 18px;gap:5px;min-width:100px;}
+        .flow-node .fn-ico{font-size:24px;}.flow-node .fn-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:800;}.flow-node .fn-sub{font-size:10px;color:var(--muted);}
+        .n-idea{border-color:rgba(124,58,237,.4)!important;background:rgba(124,58,237,.06)!important;}
+        .n-angles{border-color:rgba(6,182,212,.4)!important;background:rgba(6,182,212,.06)!important;}
+        .n-reel{border-color:rgba(124,58,237,.25)!important;}.n-ig{border-color:rgba(6,182,212,.25)!important;}.n-li{border-color:rgba(245,158,11,.25)!important;}
+        .flow-arrow{color:var(--muted2);font-size:20px;padding:0 4px;}
+        .flow-x{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--v1);padding:0 6px;}
+        .flow-group{display:flex;flex-direction:column;gap:6px;align-items:center;}
+        .flow-group-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+
+        .input-section{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:28px;margin-bottom:32px;animation:fadeUp .5s .2s ease both;}
+        .input-section label{display:block;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.14em;margin-bottom:12px;}
+        textarea{width:100%;background:var(--surface);border:1px solid var(--border-light);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:14px 16px;resize:vertical;min-height:80px;outline:none;transition:border-color .2s;}
+        textarea::placeholder{color:var(--muted2);}textarea:focus{border-color:rgba(124,58,237,.5);}
+        
+        .controls-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-top:16px;}
+        .tone-row{display:flex;gap:7px;flex-wrap:wrap;align-items:center;}
+        .tone-lbl{font-size:12px;color:var(--muted);}
+        .tone-btn{font-size:12px;padding:5px 13px;border-radius:20px;border:1px solid var(--border-light);background:transparent;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;}
+        .tone-btn:hover{border-color:var(--v1);color:var(--text);}
+        .tone-btn.active{background:rgba(124,58,237,.15);border-color:rgba(124,58,237,.5);color:#a78bfa;}
+        
+        .gen-btn{display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--v1),#5b21b6);color:#fff;border:none;border-radius:12px;padding:13px 28px;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;transition:opacity .2s,transform .2s;}
+        .gen-btn:hover:not(:disabled){opacity:.88;transform:translateY(-1px);}
+        .gen-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+        
+        .spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none;}
+        .gen-btn.loading .spinner{display:block;}.gen-btn.loading .btn-text{display:none;}
+        
+        .error-msg{background:rgba(244,63,94,.08);border:1px solid rgba(244,63,94,.25);border-radius:10px;padding:12px 16px;color:#fda4af;font-size:13px;display:none;margin-top:14px; text-align: center;}
+        
+        .progress-bar-wrap{width:100%;background:var(--border);border-radius:99px;height:4px;margin-top:16px;display:none; overflow: hidden;}
+        .progress-bar{height:4px;border-radius:99px;background:linear-gradient(90deg,var(--v1),var(--v2));transition:width .4s ease; width: 0%;}
+        .progress-label{font-size:12px;color:var(--muted);margin-top:8px;text-align:center;display:none;}
+
+        .angle-block{margin-bottom:36px;animation:fadeUp .4s ease both;}
+        .angle-header{display:flex;align-items:center;gap:14px;margin-bottom:16px;padding:16px 20px;background:var(--surface);border:1px solid var(--border);border-radius:14px;}
+        .angle-num{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:15px;flex-shrink:0;background:rgba(124,58,237,.15);color:#a78bfa;border:1px solid rgba(124,58,237,.25);}
+        .angle-info{flex:1;}
+        .angle-type{font-size:11px;color:var(--v2);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px;}
+        .angle-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;}
+        .angle-desc{font-size:13px;color:var(--muted);margin-top:3px;}
+
+        .pieces-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+        @media(max-width:800px){.pieces-grid{grid-template-columns:1fr;}}
+
+        .piece-card{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:transform .2s,box-shadow .2s; height: 100%; display: flex; flex-direction: column;}
+        .piece-card:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,.4);}
+        .p-reel{border-color:rgba(124,58,237,.25)!important;}.p-caption{border-color:rgba(6,182,212,.25)!important;}.p-linkedin{border-color:rgba(245,158,11,.25)!important;}
+        
+        .piece-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);}
+        .piece-header-left{display:flex;align-items:center;gap:9px;}
+        .piece-ico{font-size:17px;}
+        .piece-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;}
+        .piece-sub{font-size:10px;color:var(--muted);}
+        
+        .copy-btn{font-size:11px;padding:4px 11px;border-radius:7px;border:1px solid var(--border-light);background:transparent;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;}
+        .copy-btn:hover{border-color:var(--text);color:var(--text);}
+        .copy-btn.copied{border-color:rgba(16,185,129,.5);color:#6ee7b7;}
+        
+        .piece-body{padding:15px 16px;font-size:13px;line-height:1.75;color:var(--text);white-space:pre-wrap;max-height:280px;overflow-y:auto; flex: 1;}
+        .piece-body::-webkit-scrollbar{width:3px;}.piece-body::-webkit-scrollbar-thumb{background:var(--border-light);border-radius:3px;}
+
+        .table-section{margin-top:50px; display: none;}
+        .table-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
+        .table-hdr h2{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;}
+        .table-hdr .stats{font-size:13px;color:var(--muted);}
+        .export-btn{font-size:12px;padding:7px 18px;border-radius:8px;border:1px solid var(--border-light);background:transparent;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;}
+        .export-btn:hover{border-color:var(--v2);color:var(--v2);}
+        
+        .table-wrap{overflow-x:auto;border-radius:16px;border:1px solid var(--border);}
+        table{width:100%;border-collapse:collapse;font-size:12px;}
+        thead tr{background:var(--surface);}
+        th{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding:13px 14px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--border);}
+        td{padding:12px 14px;border-bottom:1px solid var(--border);vertical-align:middle;}
+        tr:last-child td{border-bottom:none;}tr:hover td{background:rgba(255,255,255,.02);}
+        .td-num{color:var(--muted);font-weight:700;font-size:11px;}
+        .td-angle{font-weight:600;max-width:180px;}
+        .td-type{display:flex;align-items:center;gap:7px;white-space:nowrap;}
+        .td-preview{color:var(--muted);max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        .td-status{display:inline-block;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);color:#6ee7b7;}
+
+        .skeleton{background:linear-gradient(90deg,var(--border) 25%,var(--border-light) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;border-radius:6px;height:12px;margin-bottom:8px;}
+        .sk-s{width:50%;}.sk-m{width:75%;}.sk-l{width:95%;}
+        
+        .placeholder-out{display:flex;flex-direction:column;gap:10px;padding:60px 32px;align-items:center;text-align:center;border:1px dashed var(--border-light);border-radius:20px;color:var(--muted);font-size:14px;}
+        .placeholder-out .big{font-size:44px;margin-bottom:6px;}
+
+        @keyframes fadeDown{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:none}}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        @keyframes shimmer{to{background-position:-200% 0}}
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <header>
+        <div class="badge">⚡ Waterfall Content Machine v4</div>
+        <h1>1 idea → 10 enfoques → 30 contenidos</h1>
+        <p>Potenciado por Gemini 2.5 Flash • Generación multinivel inteligente</p>
+    </header>
+
+    <div class="flow-diagram">
+        <div class="flow-node n-idea"><span class="fn-ico">💡</span><span class="fn-title">1 Idea</span><span class="fn-sub">Tu tema</span></div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-node n-angles"><span class="fn-ico">🔀</span><span class="fn-title">10 Enfoques</span><span class="fn-sub">Ángulos únicos</span></div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-group">
+            <span class="flow-group-label">Cada enfoque genera</span>
+            <div style="display:flex;gap:8px;">
+                <div class="flow-node n-reel"><span class="fn-ico">🎬</span><span class="fn-title">Reel</span></div>
+                <div class="flow-node n-ig"><span class="fn-ico">📸</span><span class="fn-title">Caption</span></div>
+                <div class="flow-node n-li"><span class="fn-ico">💼</span><span class="fn-title">LinkedIn</span></div>
+            </div>
+        </div>
+        <span class="flow-x">=</span>
+        <div class="flow-node n-idea"><span class="fn-ico">🚀</span><span class="fn-title" style="font-size:15px">30</span><span class="fn-sub">contenidos</span></div>
+    </div>
+
+    <div class="input-section">
+        <label>Tu idea o tema central</label>
+        <textarea id="ideaInput" placeholder="Ej: Por qué delegar es la única forma de escalar tu agencia de marketing..."></textarea>
+        <div class="controls-row">
+            <div class="tone-row">
+                <span class="tone-lbl">Tono:</span>
+                <button class="tone-btn active" data-tone="Educativo">📚 Educativo</button>
+                <button class="tone-btn" data-tone="Entretenido">🎭 Entretenido</button>
+                <button class="tone-btn" data-tone="Inspiracional">🔥 Inspiracional</button>
+                <button class="tone-btn" data-tone="Controversial">⚡ Controversial</button>
+                <button class="tone-btn" data-tone="Storytelling">🧵 Storytelling</button>
+            </div>
+            <button class="gen-btn" id="genBtn">
+                <div class="spinner"></div>
+                <span class="btn-text">✨ Generar 30 contenidos</span>
+            </button>
+        </div>
+        <div class="progress-bar-wrap" id="progressWrap"><div class="progress-bar" id="progressBar"></div></div>
+        <div class="progress-label" id="progressLabel"></div>
+        <div class="error-msg" id="errorMsg"></div>
+    </div>
+
+    <div id="outputArea">
+        <div class="placeholder-out">
+            <div class="big">🌊</div>
+            <strong>Listo para generar tu cascada de contenido</strong>
+            <div>Escribe tu idea, elige el tono y presiona <strong>Generar</strong>.<br>
+            Obtendrás <strong>10 enfoques × 3 formatos = 30 piezas</strong> + tabla resumen exportable.</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const apiKey = ""; // Provided by environment
+    let selectedTone = 'Educativo';
+    let allGeneratedContent = [];
+    let currentAngles = [];
+
+    // Tone selection
+    document.querySelectorAll('.tone-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.tone-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            selectedTone = btn.dataset.tone;
+        });
+    });
+
+    const genBtn = document.getElementById('genBtn');
+    genBtn.addEventListener('click', startGeneration);
+
+    async function startGeneration() {
+        const idea = document.getElementById('ideaInput').value.trim();
+        if (!idea) {
+            showError("Por favor, ingresa una idea o tema para comenzar.");
+            return;
+        }
+
+        // Reset UI
+        genBtn.classList.add('loading');
+        genBtn.disabled = true;
+        document.getElementById('errorMsg').style.display = 'none';
+        document.getElementById('progressWrap').style.display = 'block';
+        document.getElementById('progressLabel').style.display = 'block';
+        allGeneratedContent = [];
+        currentAngles = [];
+
+        try {
+            updateProgress(5, "Planificando 10 ángulos estratégicos...");
+            
+            // Phase 1: Generate 10 Angles
+            currentAngles = await generateAngles(idea, selectedTone);
+            
+            // Render Shell
+            initShell(idea, currentAngles);
+
+            // Phase 2: Generate Content for each angle sequentially
+            for (let i = 0; i < currentAngles.length; i++) {
+                const angle = currentAngles[i];
+                const progressPct = 10 + (i * 9);
+                updateProgress(progressPct, `Generando contenidos para enfoque ${i+1}: ${angle.title}...`);
+                
+                const content = await generateContentPiece(idea, angle, selectedTone);
+                allGeneratedContent[i] = content;
+                
+                // Update specific card in UI
+                renderAngleContent(i, angle, content);
+                updateTableRow(i, angle, content);
+            }
+
+            finalizeTable();
+            updateProgress(100, "¡Cascada de contenido completada con éxito!");
+            
+        } catch (error) {
+            console.error(error);
+            showError("Hubo un problema al conectar con la IA. Por favor, intenta de nuevo.");
+        } finally {
+            genBtn.classList.remove('loading');
+            genBtn.disabled = false;
+        }
+    }
+
+    // API CALL WITH BACKOFF
+    async function callGemini(prompt, isJson = true) {
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+        
+        const payload = {
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: isJson ? { responseMimeType: "application/json" } : {}
+        };
+
+        const maxRetries = 5;
+        let delay = 1000;
+
+        for (let i = 0; i < maxRetries; i++) {
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                
+                const data = await response.json();
+                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                return isJson ? JSON.parse(text) : text;
+
+            } catch (err) {
+                if (i === maxRetries - 1) throw err;
+                await new Promise(resolve => setTimeout(resolve, delay));
+                delay *= 2;
+            }
+        }
+    }
+
+    // GENERATE 10 ANGLES
+    async function generateAngles(idea, tone) {
+        const prompt = `Eres un estratega de contenido experto. 
+        Basado en la idea: "${idea}" y con un tono "${tone}", genera exactamente 10 ángulos o enfoques diferentes para crear contenido.
+        Cada enfoque debe ser único y atacar una necesidad, miedo, deseo o curiosidad diferente del avatar.
+        
+        Responde exclusivamente en formato JSON con la siguiente estructura:
+        {
+            "angles": [
+                {
+                    "type": "Mito vs Realidad", 
+                    "emoji": "🆚", 
+                    "title": "El gran mito de...", 
+                    "desc": "Breve explicación de por qué este ángulo funciona."
+                },
+                ... (así hasta 10)
+            ]
+        }
+        Asegúrate de incluir una variedad de tipos: Error común, Tutorial, Storytelling, Controversial, Paso a paso, Dato sorprendente, etc.`;
+        
+        const result = await callGemini(prompt);
+        return result.angles;
+    }
+
+    // GENERATE CONTENT PIECE (REEL, IG, LINKEDIN)
+    async function generateContentPiece(idea, angle, tone) {
+        const prompt = `Eres un copywriter experto en redes sociales. 
+        Idea base: "${idea}"
+        Enfoque específico: "${angle.title}" (${angle.type})
+        Tono deseado: "${tone}"
+
+        Tu misión es generar 3 formatos de contenido para este enfoque.
+        
+        1. REEL SCRIPT:
+           - Hook de alto impacto (primera frase).
+           - Guion con indicaciones visuales (Escena 1, 2, 3...) y diálogo hablado.
+           - CTA claro.
+
+        2. INSTAGRAM CAPTION:
+           - Estructura visual con emojis.
+           - Ganchos potentes.
+           - 6 hashtags estratégicos al final.
+           - Mínimo 100 palabras.
+
+        3. LINKEDIN POST:
+           - Tono profesional pero directo.
+           - Gancho de una sola frase potente.
+           - Desarrollo en puntos o párrafos cortos con espacios.
+           - Una pregunta final para generar comentarios.
+           - Mínimo 200 palabras.
+
+        Responde exclusivamente en formato JSON con la siguiente estructura:
+        {
+            "reel": {
+                "hook": "...",
+                "script": "...",
+                "cta": "..."
+            },
+            "instagram": "texto completo del caption...",
+            "linkedin": "texto completo del post..."
+        }`;
+
+        return await callGemini(prompt);
+    }
+
+    // UI RENDERERS
+    function updateProgress(pct, label) {
+        document.getElementById('progressBar').style.width = pct + '%';
+        document.getElementById('progressLabel').textContent = label;
+    }
+
+    function showError(msg) {
+        const err = document.getElementById('errorMsg');
+        err.textContent = msg;
+        err.style.display = 'block';
+    }
+
+    function initShell(idea, angles) {
+        const area = document.getElementById('outputArea');
+        let html = `<div class="section-label" style="margin-bottom:24px; font-family:'Syne'; font-size:11px; text-transform:uppercase; color:var(--muted); letter-spacing:0.1em;">
+            🌊 Generando Cascada para: <span style="color:var(--text)">"${idea}"</span>
+        </div>`;
+
+        angles.forEach((a, i) => {
+            html += `
+            <div class="angle-block" id="block-${i}">
+                <div class="angle-header">
+                    <div class="angle-num">${String(i + 1).padStart(2, '0')}</div>
+                    <div class="angle-info">
+                        <div class="angle-type">${a.emoji} ${a.type}</div>
+                        <div class="angle-title">${a.title}</div>
+                        <div class="angle-desc">${a.desc}</div>
+                    </div>
+                    <div id="status-${i}" style="font-size:12px; color:var(--muted)">⏳ Procesando...</div>
+                </div>
+                <div class="pieces-grid" id="grid-${i}">
+                    ${renderSkeleton()}
+                    ${renderSkeleton()}
+                    ${renderSkeleton()}
+                </div>
+            </div>`;
+        });
+
+        html += `
+        <div class="table-section" id="tableSection">
+            <div class="table-hdr">
+                <div>
+                    <h2>📋 Tabla Resumen</h2>
+                    <div class="stats" id="tableStats">Generando reporte consolidado...</div>
+                </div>
+                <button class="export-btn" id="exportBtn">⬇ Exportar CSV</button>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Enfoque</th>
+                            <th>Tipo</th>
+                            <th>🎬 Hook Reel</th>
+                            <th>📸 IG Preview</th>
+                            <th>💼 LinkedIn Preview</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summaryTbody"></tbody>
+                </table>
+            </div>
+        </div>`;
+
+        area.innerHTML = html;
+        document.getElementById('exportBtn').addEventListener('click', exportToCSV);
+    }
+
+    function renderSkeleton() {
+        return `
+        <div class="piece-card">
+            <div class="piece-header">
+                <div class="skeleton" style="width:100px; height:10px; margin:0;"></div>
+            </div>
+            <div class="piece-body">
+                <div class="skeleton sk-l"></div>
+                <div class="skeleton sk-m"></div>
+                <div class="skeleton sk-s"></div>
+                <div class="skeleton sk-l"></div>
+            </div>
+        </div>`;
+    }
+
+    function renderAngleContent(i, angle, data) {
+        const grid = document.getElementById(`grid-${i}`);
+        const status = document.getElementById(`status-${i}`);
+        
+        status.textContent = "✓ Completado";
+        status.style.color = "var(--v4)";
+
+        const reelText = `🎬 HOOK:\n${data.reel.hook}\n\n🎞️ GUION:\n${data.reel.script}\n\n📣 CTA:\n${data.reel.cta}`;
+        
+        grid.innerHTML = `
+            ${makePieceCard('p-reel', '🎬', 'Guion Reel', 'Video Corto', `reel-${i}`, reelText)}
+            ${makePieceCard('p-caption', '📸', 'Instagram Caption', 'Post Visual', `ig-${i}`, data.instagram)}
+            ${makePieceCard('p-linkedin', '💼', 'LinkedIn Post', 'Profesional', `li-${i}`, data.linkedin)}
+        `;
+
+        // Add copy events
+        grid.querySelectorAll('.copy-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetId = btn.getAttribute('data-target');
+                const text = document.getElementById(targetId).innerText;
+                copyToClipboard(text, btn);
+            });
+        });
+    }
+
+    function makePieceCard(cls, ico, title, sub, id, content) {
+        return `
+        <div class="piece-card ${cls}">
+            <div class="piece-header">
+                <div class="piece-header-left">
+                    <span class="piece-ico">${ico}</span>
+                    <div>
+                        <div class="piece-title">${title}</div>
+                        <div class="piece-sub">${sub}</div>
+                    </div>
+                </div>
+                <button class="copy-btn" data-target="${id}">Copiar</button>
+            </div>
+            <div class="piece-body" id="${id}">${content}</div>
+        </div>`;
+    }
+
+    function updateTableRow(i, angle, data) {
+        const tbody = document.getElementById('summaryTbody');
+        const row = document.createElement('tr');
+        
+        const preview = (txt) => txt.substring(0, 40) + '...';
+
+        row.innerHTML = `
+            <td class="td-num">${String(i + 1).padStart(2, '0')}</td>
+            <td class="td-angle">${angle.title}</td>
+            <td><div class="td-type">${angle.emoji} ${angle.type}</div></td>
+            <td class="td-preview">${preview(data.reel.hook)}</td>
+            <td class="td-preview">${preview(data.instagram)}</td>
+            <td class="td-preview">${preview(data.linkedin)}</td>
+            <td><span class="td-status">✓ Listo</span></td>
+        `;
+        tbody.appendChild(row);
+    }
+
+    function finalizeTable() {
+        const tableSec = document.getElementById('tableSection');
+        tableSec.style.display = 'block';
+        document.getElementById('tableStats').innerHTML = `<strong>10 enfoques</strong> × 3 formatos = <strong>30 piezas de contenido</strong>`;
+    }
+
+    function copyToClipboard(text, btn) {
+        const temp = document.createElement('textarea');
+        temp.value = text;
+        document.body.appendChild(temp);
+        temp.select();
+        document.execCommand('copy');
+        document.body.removeChild(temp);
+        
+        const originalText = btn.textContent;
+        btn.textContent = "✓ Copiado";
+        btn.classList.add('copied');
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.classList.remove('copied');
+        }, 2000);
+    }
+
+    function exportToCSV() {
+        const rows = [["#", "Enfoque", "Tipo", "Reel Hook", "Reel Script", "Reel CTA", "Instagram Caption", "LinkedIn Post"]];
+        
+        currentAngles.forEach((angle, i) => {
+            const data = allGeneratedContent[i];
+            if (!data) return;
+            rows.push([
+                i + 1,
+                angle.title,
+                angle.type,
+                data.reel.hook,
+                data.reel.script,
+                data.reel.cta,
+                data.instagram,
+                data.linkedin
+            ]);
+        });
+
+        let csvContent = "data:text/csv;charset=utf-8," 
+            + rows.map(e => e.map(field => `"${String(field).replace(/"/g, '""')}"`).join(",")).join("\n");
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `waterfall_content_${Date.now()}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+</script>
+</body>
+</html>
